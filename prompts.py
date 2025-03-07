@@ -48,6 +48,6 @@ doctor_prompt_template_no_sources = PromptTemplate(
     template = doctor_conversational_template_no_sources
 )
 
-#quirky GenZ prompt
+#quirky GenZ prompt bot
 
 #give the relatedness of each context source also in the response

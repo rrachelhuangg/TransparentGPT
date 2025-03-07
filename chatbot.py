@@ -11,9 +11,13 @@ from math import exp
 import numpy as np
 from typing import Any, Dict, List, Tuple
 from langchain_core.output_parsers import BaseOutputParser
+from difflib import SequenceMatcher
+from methods import test_sim_val
 
 #setting environment variables (non-Nebius API access keys)
 #HAVE CLASSES BE IMPORT FROM OTHER FILES TO CLEAN UP CODE!! proper documentation and typing are v important
+#also don't forget to refactor!^
+#have a requirements.txt file if not deployed?
 load_dotenv()
 
 class LineListOutputParser(BaseOutputParser[List[str]]):
@@ -159,6 +163,15 @@ async def handle_message(message: cl.Message):
         response = TransparentGPT_settings.llm.invoke(prompt_value)
     else:
         response = TransparentGPT_settings.llm.invoke(expanded_query)
+    similarity_values = []
+    temp = response.content
+    sources = []
+    while "*" in temp:
+        link_idx = temp.rfind("*")
+        source = temp[link_idx+1:]
+        similarity_values += [test_sim_val(temp, source)]
+        temp = temp[:link_idx]
+    await cl.Message(str(similarity_values)).send()
     output_message = response.content + f"\n I am {highest_log_prob(response.response_metadata["logprobs"]['content'])}% confident in this response."
     await cl.Message(output_message).send()
 
