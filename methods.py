@@ -18,6 +18,7 @@ import nltk
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import json
 
 llm = ChatOpenAI(
     base_url="https://api.studio.nebius.com/v1/",
@@ -59,3 +60,14 @@ def test_scrape_sim(link, response):
         return cosine_sim*100
     except:
         return 0
+
+config_file="config.json"
+def get_config():
+    with open(config_file, "r") as file:
+        return json.load(file)
+def update_config(new_value):
+    config = get_config()
+    config["num_sources"] = new_value
+    with open(config_file, "w") as file:
+        json.dump(config, file, indent=4)
+#update_config(5)

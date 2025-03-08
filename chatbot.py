@@ -12,13 +12,22 @@ import numpy as np
 from typing import Any, Dict, List, Tuple
 from langchain_core.output_parsers import BaseOutputParser
 from difflib import SequenceMatcher
-from methods import test_scrape_sim
+from methods import test_scrape_sim, update_config
+import json
 
 #setting environment variables (non-Nebius API access keys)
 #HAVE CLASSES BE IMPORT FROM OTHER FILES TO CLEAN UP CODE!! proper documentation and typing are v important
 #also don't forget to refactor!^
 #have a requirements.txt file if not deployed?
 load_dotenv()
+
+# update_config(5)
+def load_config():
+    with open("config.json","r") as file:
+        return json.load(file)
+
+config = load_config()
+num_sources = config["num_sources"]
 
 class LineListOutputParser(BaseOutputParser[List[str]]):
     """Output parser that splits a LLM result into a list of queries."""
@@ -33,6 +42,7 @@ class TransparentGPTSettings:
         self.prompt = default_prompt_template
         self.prompt_mappings = {"default": default_prompt_template, "default_no_sources": default_prompt_template_no_sources, "doctor": doctor_prompt_template, "doctor_no_sources": default_prompt_template_no_sources}
         self.prompt_name = "default"
+        self.num_sources = load_config()["num_sources"]
         self.llm = ChatOpenAI(
             base_url="https://api.studio.nebius.com/v1/",
             api_key=os.environ.get("NEBIUS_API_KEY"),
@@ -52,6 +62,7 @@ class TransparentGPTSettings:
         self.model = settings['Model']
         self.temperature = settings['Temperature']
         self.prompt = self.prompt_mappings[settings['Prompt Template']]
+        self.num_sources=settings['Number of Sources']
         self.llm = ChatOpenAI(
             base_url="https://api.studio.nebius.com/v1/",
             api_key=os.environ.get("NEBIUS_API_KEY"),
@@ -122,11 +133,20 @@ async def start():
                 items = TransparentGPT_settings.query_expansion_options,
                 initial_value="No query expansion"
             ),
+            Slider(
+                id="Number of Sources",
+                label="num sources",
+                initial=3,
+                min=1,
+                max=10,
+                step=1
+            ),
         ]
     ).send()
 
 @cl.on_settings_update
 async def start(settings):
+    update_config(settings['Number of Sources'])
     TransparentGPT_settings.update_settings(settings)
 
 @cl.on_message
@@ -138,7 +158,7 @@ async def handle_message(message: cl.Message):
             t = 'Return a thorough but concise search term to answer this question: {question}'
             pt = PromptTemplate(input_variables=['question'], template=t)
             init_chain = pt | TransparentGPT_settings.llm
-            expanded_query = init_chain.invoke({"question": question}).content
+            expanded_query = init_chain.invoke({"question": question, "num_sources": TransparentGPT_settings.num_sources}).content
         elif TransparentGPT_settings.query_expansion == 'Multiquery expansion':
             output_parser = LineListOutputParser()
             pt = PromptTemplate(
@@ -151,16 +171,16 @@ async def handle_message(message: cl.Message):
                 """
             )
             init_chain = pt | TransparentGPT_settings.llm | output_parser
-            expanded_query = ' '.join(init_chain.invoke({'question': message.content}))
+            expanded_query = ' '.join(init_chain.invoke({'question': message.content, "num_sources": TransparentGPT_settings.num_sources}))
         elif TransparentGPT_settings.query_expansion == "Hypothetical answer":
             hypothetical_answer = generate_hypothetical_answer(message.content)
             expanded_query = f'{message.content} {hypothetical_answer.content}'
     no_source_prompt=""
     if expanded_query == '' and not TransparentGPT_settings.display_sources:
         no_source_prompt = TransparentGPT_settings.prompt_mappings[TransparentGPT_settings.prompt_name+"_no_sources"]
-        expanded_query = no_source_prompt.invoke({"question": question})
+        expanded_query = no_source_prompt.invoke({"question": question, "num_sources": TransparentGPT_settings.num_sources})
     elif expanded_query == '' and TransparentGPT_settings.display_sources:
-        expanded_query = TransparentGPT_settings.prompt.invoke({"question":question})
+        expanded_query = TransparentGPT_settings.prompt.invoke({"question":question, "num_sources":TransparentGPT_settings.num_sources})
     response = TransparentGPT_settings.llm.invoke(expanded_query)
     similarity_values = []
     if no_source_prompt=="":
@@ -168,7 +188,7 @@ async def handle_message(message: cl.Message):
         sources = []
         count = 0
         while "*" in temp:
-            if count < 3:
+            if count < num_sources:
                 link_idx = temp.rfind("*")
                 source = temp[link_idx+1:]
                 similarity_values += [test_scrape_sim(source, response.content)]
@@ -181,7 +201,7 @@ async def handle_message(message: cl.Message):
     count = 0
     if len(similarity_values) > 0:
         while "*" in temp:
-            if count < 3:
+            if count < num_sources:
                 link_idx = temp.rfind("*")
                 response.content = response.content[:link_idx] + str(round(similarity_values[here],3)) + "%" + response.content[link_idx+1:]
                 temp = temp[:link_idx]

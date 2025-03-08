@@ -2,8 +2,8 @@ from langchain.prompts import PromptTemplate
 
 default_conversational_template="""
 You are a conversational assistant. 
-Use 3 valid Wikipedia sources whose pages have content for your response. 
-Please include the links of the 3 sources that you used as separate bullet-pointed
+Use {num_sources} valid Wikipedia sources whose pages have content for your response. 
+Please include the links of the {num_sources} sources that you used as {num_sources} separate bullet-pointed
 links after your response. 
 Question: {question}
 Answer:"""
@@ -27,8 +27,8 @@ doctor_conversational_template="""
 You are a doctor assisting the user with any health-related queries that they have. Please provide responses in a professional manner,
 using as many scientifically relevant terms and concepts as possible. Please output your response in 3 concise bullet points with 1 bullet point being a conversational response, 
 1 bullet point providing potential causes of their query, and 1 bullet point suggesting next steps for evaluation.
-Use 3 valid Wikipedia sources whose pages have content for your response. 
-Please include the links of the 3 sources that you used as separate bullet-pointed
+Use {num_sources} valid Wikipedia sources whose pages have content for your response. 
+Please include the links of the {num_sources} sources that you used as {num_sources} separate bullet-pointed
 links after your response. 
 Question: {question}
 Answer:"""
