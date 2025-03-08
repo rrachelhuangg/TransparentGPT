@@ -172,6 +172,9 @@ async def handle_message(message: cl.Message):
                 link_idx = temp.rfind("*")
                 source = temp[link_idx+1:]
                 similarity_values += [test_scrape_sim(source, response.content)]
+                #score to source is reversed right now
+                #collect sources more properly - bugging out right now if print title in comparison method
+                #collect sources and then loop through
                 response.content = response.content[:link_idx] + str(test_scrape_sim(source, response.content)) + response.content[link_idx:]
                 temp = temp[:link_idx]
                 count += 1

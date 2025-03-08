@@ -40,11 +40,27 @@ def scrape_web_text(link):
     except:
         return ""
 
+def get_wikipedia_page_content(page_title):
+    #scraping wikipedia pages with the Revisions API
+    url = f"https://en.wikipedia.org/w/api.php?action=query&format=json&prop=revisions&titles={page_title}&formatversion=2&rvprop=content&rvslots=*"
+    response = requests.get(url)
+    data = response.json()
+    
+    #print("SCRAPED: ", data["query"]["pages"][0]["revisions"][0]["slots"]["main"]["content"])
+    return data["query"]["pages"][0]["revisions"][0]["slots"]["main"]["content"]
+
 def test_scrape_sim(link, response):
     tfidf_vectorizer = TfidfVectorizer()
     try:
-        tfidf_matrix = tfidf_vectorizer.fit_transform([scrape_web_text(link), response])
+        idx = link.rfind("/")
+        title = link[idx+1:]
+        tfidf_matrix = tfidf_vectorizer.fit_transform([get_wikipedia_page_content(title), response])
+        # tfidf_matrix = tfidf_vectorizer.fit_transform([scrape_web_text(link), response])
         cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
         return cosine_sim*100
     except:
         return 0
+
+
+# page_content = get_wikipedia_page_content("Albert Einstein")
+# print(page_content) 
