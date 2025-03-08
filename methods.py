@@ -12,6 +12,12 @@ import numpy as np
 from typing import Any, Dict, List, Tuple
 from langchain_core.output_parsers import BaseOutputParser
 from difflib import SequenceMatcher
+import requests
+from bs4 import BeautifulSoup
+import nltk
+import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 llm = ChatOpenAI(
     base_url="https://api.studio.nebius.com/v1/",
@@ -20,45 +26,25 @@ llm = ChatOpenAI(
     temperature = 0.7
 ).bind(logprobs=True)
 
-def direct_text_comparison(text1, text2):
-    similarity_ratio = SequenceMatcher(None, text1, text2).ratio()
-    return similarity_ratio
+def scrape_web_text(link):
+    page = requests.get(link)
+    soup = BeautifulSoup(page.content, "html.parser")
+    try:
+        text = soup.get_text()
+        sentences = text.split(".")
+        results = [sentence for sentence in sentences if "Instagram" in sentence]
+        final = ""
+        for result in results:
+            final += re.sub(r"\s+", "", text)
+        return final
+    except:
+        return ""
 
-def context_text_comparison(text1, text2):
-    similarity_ratio = llm.predict(f"How similar in context and meaning are these two pieces or provided text? Please provide a two-sentence analysis. End your response with either not similar, kind of similar, and very similar. Text1: {text1} Text 2: {text2}")
-    return similarity_ratio
-
-def source_description(source):
-    description = llm.predict(f"Please provide a two-sentence description of the information that this source contains and where it got its information from: {source}")
-    return description
-
-def similarity_value(direct, context):
-    context_similarity, direct_similarity = 0, 0
-    context = context[-50:]
-    if "not similar" in context:
-        context_similarity = 0.25
-    elif "kind of similar" in context:
-        context_similarity = 0.5
-    elif "very similar" in context:
-        context_similarity = 0.75
-    if direct < 0.25:
-        direct_similarity = 0.25
-    elif direct > 0.25 and direct < 0.5:
-        direct_similarity = 0.5
-    elif direct > 0.5:
-        direct_similarity = 0.75
-    print("VALS: ", context_similarity, direct_similarity)
-    return context_similarity + direct_similarity
-
-def test_sim_val(response_content, link):
-    text2 = source_description(link)
-    #context_text_comp = context_text_comparison(response_content, text2)
-    return direct_text_comparison(response_content, link)
-    # context = context_text_comp[-50:]
-    # if "not similar" in context:
-    #     context_similarity = 0.25
-    # elif "kind of similar" in context:
-    #     context_similarity = 0.5
-    # elif "very similar" in context:
-    #     context_similarity = 0.75
-    # return context_similarity
+def test_scrape_sim(link, response):
+    tfidf_vectorizer = TfidfVectorizer()
+    try:
+        tfidf_matrix = tfidf_vectorizer.fit_transform([scrape_web_text(link), response])
+        cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+        return cosine_sim*100
+    except:
+        return 0

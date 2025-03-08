@@ -12,7 +12,7 @@ import numpy as np
 from typing import Any, Dict, List, Tuple
 from langchain_core.output_parsers import BaseOutputParser
 from difflib import SequenceMatcher
-from methods import test_sim_val
+from methods import test_scrape_sim
 
 #setting environment variables (non-Nebius API access keys)
 #HAVE CLASSES BE IMPORT FROM OTHER FILES TO CLEAN UP CODE!! proper documentation and typing are v important
@@ -88,7 +88,7 @@ def highest_log_prob(vals):
 
 @cl.on_chat_start
 async def start():
-    await cl.Message("Hello! I am Parker, your social media analysis chatbot.🦋🕸️").send()
+    await cl.Message("Hello!").send()
     conversation_memory = ConversationBufferMemory(memory_key="chat_history",
                                                    max_len=50,
                                                    return_messages = True)
@@ -155,25 +155,121 @@ async def handle_message(message: cl.Message):
         elif TransparentGPT_settings.query_expansion == "Hypothetical answer":
             hypothetical_answer = generate_hypothetical_answer(message.content)
             expanded_query = f'{message.content} {hypothetical_answer.content}'
-    if expanded_query == '':
-        expanded_query = TransparentGPT_settings.prompt.invoke({"question": question})
-    if not TransparentGPT_settings.display_sources:
+    no_source_prompt=""
+    if expanded_query == '' and not TransparentGPT_settings.display_sources:
         no_source_prompt = TransparentGPT_settings.prompt_mappings[TransparentGPT_settings.prompt_name+"_no_sources"]
-        prompt_value = no_source_prompt.invoke({"question": expanded_query})
-        response = TransparentGPT_settings.llm.invoke(prompt_value)
-    else:
-        response = TransparentGPT_settings.llm.invoke(expanded_query)
-    similarity_values = []
-    temp = response.content
-    sources = []
-    while "*" in temp:
-        link_idx = temp.rfind("*")
-        source = temp[link_idx+1:]
-        similarity_values += [test_sim_val(temp, source)]
-        temp = temp[:link_idx]
-    await cl.Message(str(similarity_values)).send()
+        expanded_query = no_source_prompt.invoke({"question": question})
+    elif expanded_query == '' and TransparentGPT_settings.display_sources:
+        expanded_query = TransparentGPT_settings.prompt.invoke({"question":question})
+    response = TransparentGPT_settings.llm.invoke(expanded_query)
+    if no_source_prompt=="":
+        similarity_values = []
+        temp = response.content
+        sources = []
+        count = 0
+        while "*" in temp:
+            if count < 3:
+                link_idx = temp.rfind("*")
+                source = temp[link_idx+1:]
+                similarity_values += [test_scrape_sim(source, response.content)]
+                response.content = response.content[:link_idx] + str(test_scrape_sim(source, response.content)) + response.content[link_idx:]
+                temp = temp[:link_idx]
+                count += 1
+            else:
+                break
     output_message = response.content + f"\n I am {highest_log_prob(response.response_metadata["logprobs"]['content'])}% confident in this response."
     await cl.Message(output_message).send()
 
+
 if __name__ == '__main__':
     start()
+
+
+
+
+# async def handle_message(message: cl.Message):
+#     question = message.content
+#     expanded_query = ''
+#     if TransparentGPT_settings.query_expansion != 'No query expansion':
+#         if TransparentGPT_settings.query_expansion == 'Basic query expansion':
+#             t = 'Return a thorough but concise search term to answer this question: {question}'
+#             pt = PromptTemplate(input_variables=['question'], template=t)
+#             init_chain = pt | TransparentGPT_settings.llm
+#             expanded_query = init_chain.invoke({"question": question}).content
+#         elif TransparentGPT_settings.query_expansion == 'Multiquery expansion':
+#             output_parser = LineListOutputParser()
+#             pt = PromptTemplate(
+#                 input_variables=['question'],
+#                 template="""
+#                 You are an AI language model assistant. Your task is to generate give different versions of the given user question to retrieve
+#                 context for your response. By generating multiple perspectives on the user question, your goal is to help the user overcome
+#                 some of hte limitations of the distance-based similarity search. Provide these alternative questions separated by newlines. 
+#                 Original question: {question},
+#                 """
+#             )
+#             init_chain = pt | TransparentGPT_settings.llm | output_parser
+#             expanded_query = ' '.join(init_chain.invoke({'question': message.content}))
+#         elif TransparentGPT_settings.query_expansion == "Hypothetical answer":
+#             hypothetical_answer = generate_hypothetical_answer(message.content)
+#             expanded_query = f'{message.content} {hypothetical_answer.content}'
+#     if not TransparentGPT_settings.display_sources:
+#         no_source_prompt = TransparentGPT_settings.prompt_mappings[TransparentGPT_settings.prompt_name+"_no_sources"]
+#         print("question: ", question)
+#         if expanded_query == '':
+#             response = no_source_prompt.invoke({"question": question})
+#         else:
+#             response = no_source_prompt.invoke({"question":expanded_query})
+#         print("RESPONSE: ", response)
+#     else:
+#         if expanded_query == '':
+#             response = TransparentGPT_settings.prompt.invoke({"question": question})    
+#         else:
+#             response = TransparentGPT_settings.llm.invoke(expanded_query)
+#         print("RESPONSE: ", response)
+#         similarity_values = []
+#         temp = response.content
+#         sources = []
+#         count = 0
+#         while "*" in temp:
+#             if count < 3:
+#                 link_idx = temp.rfind("*")
+#                 source = temp[link_idx+1:]
+#                 similarity_values += [test_scrape_sim(source, response.content)]
+#                 response.content = response.content[:link_idx] + str(test_scrape_sim(source, response.content)) + response.content[link_idx:]
+#                 temp = temp[:link_idx]
+#                 count += 1
+#             else:
+#                 break
+
+
+    # if expanded_query == '':
+    #     expanded_query = TransparentGPT_settings.prompt.invoke({"question": question})
+    # if not TransparentGPT_settings.display_sources:
+    #     print("EXAPNDED QUERY: ", expanded_query)
+    #     no_source_prompt = TransparentGPT_settings.prompt_mappings[TransparentGPT_settings.prompt_name+"_no_sources"]
+        #prompt_value = no_source_prompt.invoke({"question": expanded_query})
+        # response = no_source_prompt.invoke({"question": expanded_query})
+        # print("NO SOURCE PROMPT: ", no_source_prompt.template)
+        # #response = TransparentGPT_settings.llm.invoke(prompt_value)
+        # response = TransparentGPT_settings.llm.invoke(no_source_prompt.template)
+    # else:
+    #     response = TransparentGPT_settings.llm.invoke(expanded_query)
+    # similarity_values = []
+    # temp = response.content
+    # sources = []
+    # count = 0
+    # while "*" in temp:
+    #     if count < 3:
+    #         link_idx = temp.rfind("*")
+    #         source = temp[link_idx+1:]
+    #         similarity_values += [test_scrape_sim(source, response.content)]
+    #         response.content = response.content[:link_idx] + str(test_scrape_sim(source, response.content)) + response.content[link_idx:]
+    #         temp = temp[:link_idx]
+    #         count += 1
+    #     else:
+    #         break
+#     output_message = response.content + f"\n I am {highest_log_prob(response.response_metadata["logprobs"]['content'])}% confident in this response."
+#     await cl.Message(output_message).send()
+
+# if __name__ == '__main__':
+#     start()

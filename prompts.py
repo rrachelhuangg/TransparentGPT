@@ -2,7 +2,7 @@ from langchain.prompts import PromptTemplate
 
 default_conversational_template="""
 You are a conversational assistant. 
-Use 20 linkable sources maximum for your response. Please include the links of the 3 sources that you used as separate bullet-pointed
+Use 3 Wikipedia sources for your response. Please include the links of the 3 sources that you used as separate bullet-pointed
 links after your response. 
 Question: {question}
 Answer:"""
@@ -49,5 +49,8 @@ doctor_prompt_template_no_sources = PromptTemplate(
 )
 
 #quirky GenZ prompt bot
+#movies
+#food
+#wine
 
 #give the relatedness of each context source also in the response
