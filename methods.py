@@ -42,11 +42,10 @@ def scrape_web_text(link):
 
 def get_wikipedia_page_content(page_title):
     #scraping wikipedia pages with the Revisions API
+    page_title = re.sub(r"\s+", "", page_title).strip()
     url = f"https://en.wikipedia.org/w/api.php?action=query&format=json&prop=revisions&titles={page_title}&formatversion=2&rvprop=content&rvslots=*"
     response = requests.get(url)
     data = response.json()
-    
-    #print("SCRAPED: ", data["query"]["pages"][0]["revisions"][0]["slots"]["main"]["content"])
     return data["query"]["pages"][0]["revisions"][0]["slots"]["main"]["content"]
 
 def test_scrape_sim(link, response):
@@ -60,7 +59,3 @@ def test_scrape_sim(link, response):
         return cosine_sim*100
     except:
         return 0
-
-
-# page_content = get_wikipedia_page_content("Albert Einstein")
-# print(page_content) 
