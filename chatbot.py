@@ -30,7 +30,7 @@ TransparentGPT_settings = TransparentGPTSettings()
 
 @cl.on_chat_start
 async def start():
-    greeting = f"Hello! I am TransparentGPT, a chatbot that is able to clarify my reasoning 🧠, explain my thought process 🙊, and cite the sources 📚 that I used for my response. \n\n I also provide a suite of features for you to customize me! 😁 \n\n You can find my customization options in the settings panel that opens up when you click on the gear icon below 🔨. \n\n Click on the ReadME button in the top right of your screen to learn more about how I work. 🫶"
+    greeting = f"Hello! I am TransparentGPT, a chatbot that is able to clarify my reasoning 🧠, explain my thought process 🙊, and cite the sources 📚 that I used for my response. \n\n I also provide a suite of customizable features! 😁 \n\n You can find my customization options in the settings panel that opens up when you click on the gear icon below 🔨. \n\n Click on the ReadME button in the top right of your screen to learn more about how I work. 🫶"
     await cl.Message(greeting).send()
     #ADD CONVERSATION MEMORY
     conversation_memory = ConversationBufferMemory(memory_key="chat_history",
@@ -93,14 +93,15 @@ async def start(settings):
 
 @cl.on_message
 async def handle_message(message: cl.Message):
+    await cl.Message("Your message was received successfully. I am working on generating my response. Please wait for a few seconds...").send()
     question = message.content
     expanded_query = ''
     if TransparentGPT_settings.query_expansion != 'No query expansion':
         if TransparentGPT_settings.query_expansion == 'Basic query expansion':
-            t = 'Return a thorough but concise search term to answer this question: {question}'
+            t = 'Return a one sentence thorough description of this content: {question}'
             pt = PromptTemplate(input_variables=['question'], template=t)
             init_chain = pt | TransparentGPT_settings.llm
-            expanded_query = init_chain.invoke({"question": question, "num_sources": TransparentGPT_settings.num_sources}).content
+            expanded_query = init_chain.invoke({"question": message.content, "num_sources": TransparentGPT_settings.num_sources}).content
         elif TransparentGPT_settings.query_expansion == 'Multiquery expansion':
             output_parser = LineListOutputParser()
             pt = PromptTemplate(
@@ -117,14 +118,22 @@ async def handle_message(message: cl.Message):
         elif TransparentGPT_settings.query_expansion == "Hypothetical answer":
             hypothetical_answer = generate_hypothetical_answer(message.content)
             expanded_query = f'{message.content} {hypothetical_answer.content}'
+    if expanded_query!='':
+        await cl.Message(f"Using {TransparentGPT_settings.query_expansion}, your query is now: {expanded_query}. This expanded query will help me find more relevant information for my response.").send()
     no_source_prompt=""
     if expanded_query == '' and not TransparentGPT_settings.display_sources:
         no_source_prompt = TransparentGPT_settings.prompt_mappings[TransparentGPT_settings.prompt_name+"_no_sources"]
         expanded_query = no_source_prompt.invoke({"question": question, "num_sources": TransparentGPT_settings.num_sources})
     elif expanded_query == '' and TransparentGPT_settings.display_sources:
         expanded_query = TransparentGPT_settings.prompt.invoke({"question":question, "num_sources":TransparentGPT_settings.num_sources})
+    elif expanded_query !='' and not TransparentGPT_settings.display_sources:
+        no_source_prompt = TransparentGPT_settings.prompt_mappings[TransparentGPT_settings.prompt_name+"_no_sources"]
+        expanded_query = no_source_prompt.invoke({"question": expanded_query, "num_sources": TransparentGPT_settings.num_sources})
+    elif expanded_query !='' and TransparentGPT_settings.display_sources:
+        expanded_query = TransparentGPT_settings.prompt.invoke({"question":expanded_query, "num_sources":TransparentGPT_settings.num_sources})
     response = TransparentGPT_settings.llm.invoke(expanded_query)
     similarity_values = []
+    await cl.Message("I have begun looking for relevant sources to answer your query, and am giving them a similarity score to show you how relevant they are to my response.").send()
     if no_source_prompt=="":
         temp = response.content
         sources = []
