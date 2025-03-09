@@ -3,7 +3,7 @@ import chainlit as cl
 from langchain.memory.buffer import ConversationBufferMemory
 from langchain_openai import ChatOpenAI, OpenAI
 from langchain.chains import LLMChain
-from prompts import default_prompt_template, doctor_prompt_template, default_prompt_template_no_sources, doctor_prompt_template_no_sources
+from prompts import default_prompt_template, doctor_prompt_template, default_prompt_template_no_sources, doctor_prompt_template_no_sources, default_quirky_genz_prompt, default_quirky_genz_prompt_no_sources, default_food_critic_prompt, default_food_critic_prompt_no_sources
 from dotenv import load_dotenv
 from chainlit.input_widget import Select, Switch, Slider
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
@@ -12,8 +12,10 @@ import numpy as np
 from typing import Any, Dict, List, Tuple
 from langchain_core.output_parsers import BaseOutputParser
 from difflib import SequenceMatcher
-from methods import test_scrape_sim, update_config
+from methods import test_scrape_sim, update_config, load_config, generate_hypothetical_answer, highest_log_prob
 import json
+from classes import LineListOutputParser, TransparentGPTSettings
+import emoji
 
 #setting environment variables (non-Nebius API access keys)
 #HAVE CLASSES BE IMPORT FROM OTHER FILES TO CLEAN UP CODE!! proper documentation and typing are v important
@@ -21,85 +23,16 @@ import json
 #have a requirements.txt file if not deployed?
 load_dotenv()
 
-# update_config(5)
-def load_config():
-    with open("config.json","r") as file:
-        return json.load(file)
-
 config = load_config()
 num_sources = config["num_sources"]
 
-class LineListOutputParser(BaseOutputParser[List[str]]):
-    """Output parser that splits a LLM result into a list of queries."""
-    def parse(self, text: str) -> List[str]:
-        lines = text.strip().split('\n')
-        return list(filter(None, lines))
-
-class TransparentGPTSettings:
-    def __init__(self):
-        self.model = "meta-llama/Llama-3.3-70B-Instruct"
-        self.temperature = 0.7
-        self.prompt = default_prompt_template
-        self.prompt_mappings = {"default": default_prompt_template, "default_no_sources": default_prompt_template_no_sources, "doctor": doctor_prompt_template, "doctor_no_sources": default_prompt_template_no_sources}
-        self.prompt_name = "default"
-        self.num_sources = load_config()["num_sources"]
-        self.llm = ChatOpenAI(
-            base_url="https://api.studio.nebius.com/v1/",
-            api_key=os.environ.get("NEBIUS_API_KEY"),
-            model = self.model,
-            temperature = self.temperature
-        ).bind(logprobs=True)
-        self.display_sources = True
-        self.query_expansion_options = {
-            'No query expansion': 'No query expansion',
-            'Basic query expansion': 'Basic query expansion',
-            'Multiquery expansion': 'Multiquery expansion',
-            'Hypothetical answer expansion': 'Hypothetical answer'
-        }
-        self.query_expansion = 'No query expansion'
-
-    def update_settings(self, settings):
-        self.model = settings['Model']
-        self.temperature = settings['Temperature']
-        self.prompt = self.prompt_mappings[settings['Prompt Template']]
-        self.num_sources=settings['Number of Sources']
-        self.llm = ChatOpenAI(
-            base_url="https://api.studio.nebius.com/v1/",
-            api_key=os.environ.get("NEBIUS_API_KEY"),
-            model = self.model,
-            temperature = self.temperature
-        ).bind(logprobs=True)
-        self.display_sources = settings['Source Display']
-        self.prompt_name = settings['Prompt Template']
-        self.query_expansion = settings['Query Expansion']
-
 TransparentGPT_settings = TransparentGPTSettings()
-
-def generate_hypothetical_answer(question: str) -> str:
-    """Have LLM generate a hypothetical answer to assist with bot response."""
-    prompt = PromptTemplate(
-        input_variables=['question'],
-        template="""
-        You are an AI assistant taked with generate a hypothetical answer to the following question. Your answer shoulld be detailed and comprehensive,
-        as if you had access to all relevant information. This hypothetical answer will be used to improve document retrieval, so include key terms and concepts
-        that might be relevant. Do not include phrases like "I think" or "It's possible that" - present the information as if it were factual.
-        Question:{question}
-        Hypothetical answer:
-        """,
-    )
-    return TransparentGPT_settings.llm.invoke(prompt.format(question=question))
-
-def highest_log_prob(vals):
-    """Calculates the perplexity score (confidence) of bot response."""
-    logprobs = []
-    for token in vals:
-        logprobs += [token['logprob']]
-    average_log_prob = sum(logprobs)/len(logprobs)
-    return np.round(np.exp(average_log_prob)*100,2)
 
 @cl.on_chat_start
 async def start():
-    await cl.Message("Hello!").send()
+    greeting = f"Hello! I am TransparentGPT, a chatbot that is able to clarify my reasoning 🧠, explain my thought process 🙊, and cite the sources 📚 that I used for my response. \n\n I also provide a suite of features for you to customize me! 😁 \n\n You can find my customization options in the settings panel that opens up when you click on the gear icon below 🔨. \n\n Click on the ReadME button in the top right of your screen to learn more about how I work. 🫶"
+    await cl.Message(greeting).send()
+    #ADD CONVERSATION MEMORY
     conversation_memory = ConversationBufferMemory(memory_key="chat_history",
                                                    max_len=50,
                                                    return_messages = True)
@@ -107,23 +40,22 @@ async def start():
         [
             Select(
                 id="Model",
-                label="OpenAI - Model",
-                values=["meta-llama/Meta-Llama-3.1-70B-Instruct", "meta-llama/Llama-3.3-70B-Instruct", "mistralai/Mixtral-8x7B-Instruct-v0.1", "cognitivecomputations/dolphin-2.9.2-mixtral-8x22b", "Qwen/Qwen2.5-Coder-7B", "microsoft/Phi-3-mini-4k-instruct"],
+                label="Select Model",
+                description="Choose which large language model you want to interact with.",
+                values=["Meta Llama 3.1", "Meta Llama 3.3", "MistralAI", "Dolphin Mixtral", "Microsoft Mini"],
                 initial_index=1,
             ),
-            Switch(id="Source Display", label="Display Sources", initial=True),
-            Slider(
-                id="Temperature",
-                label="OpenAI - Temperature",
-                initial=0.7,
-                min=0,
-                max=2,
-                step=0.1
+            Switch(
+                id="Display Sources",
+                label="Display Sources",
+                description = "Choose to have sources for response displayed.",
+                initial=True
             ),
             Select(
                 id="Prompt Template",
-                label="Prompt used to create bot",
-                values=["default", "doctor"],
+                label="Prompt Template",
+                description="Determines the type of bot you interact with.",
+                values=["default", "doctor", "genz", "food-critic"],
                 initial_index=0,
             ),
             Select(
@@ -135,11 +67,21 @@ async def start():
             ),
             Slider(
                 id="Number of Sources",
-                label="num sources",
+                label="Number of Sources",
+                description="Choose the number of sources you want the bot to use for its response.",
                 initial=3,
                 min=1,
                 max=10,
                 step=1
+            ),
+            Slider(
+                id="Temperature",
+                label="Temperature",
+                description="Choose the desired consistency of bot response.",
+                initial=0.7,
+                min=0,
+                max=2,
+                step=0.1
             ),
         ]
     ).send()

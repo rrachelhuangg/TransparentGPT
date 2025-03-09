@@ -27,20 +27,6 @@ llm = ChatOpenAI(
     temperature = 0.7
 ).bind(logprobs=True)
 
-def scrape_web_text(link):
-    page = requests.get(link)
-    soup = BeautifulSoup(page.content, "html.parser")
-    try:
-        text = soup.get_text()
-        sentences = text.split(".")
-        results = [sentence for sentence in sentences if "Instagram" in sentence]
-        final = ""
-        for result in results:
-            final += re.sub(r"\s+", "", text)
-        return final
-    except:
-        return ""
-
 def get_wikipedia_page_content(page_title):
     #scraping wikipedia pages with the Revisions API
     page_title = re.sub(r"\s+", "", page_title).strip()
@@ -70,4 +56,29 @@ def update_config(new_value):
     config["num_sources"] = new_value
     with open(config_file, "w") as file:
         json.dump(config, file, indent=4)
-#update_config(5)
+
+def load_config():
+    with open("config.json","r") as file:
+        return json.load(file)
+
+def generate_hypothetical_answer(question: str) -> str:
+    """Have LLM generate a hypothetical answer to assist with bot response."""
+    prompt = PromptTemplate(
+        input_variables=['question'],
+        template="""
+        You are an AI assistant taked with generate a hypothetical answer to the following question. Your answer shoulld be detailed and comprehensive,
+        as if you had access to all relevant information. This hypothetical answer will be used to improve document retrieval, so include key terms and concepts
+        that might be relevant. Do not include phrases like "I think" or "It's possible that" - present the information as if it were factual.
+        Question:{question}
+        Hypothetical answer:
+        """,
+    )
+    return TransparentGPT_settings.llm.invoke(prompt.format(question=question))
+
+def highest_log_prob(vals):
+    """Calculates the perplexity score (confidence) of bot response."""
+    logprobs = []
+    for token in vals:
+        logprobs += [token['logprob']]
+    average_log_prob = sum(logprobs)/len(logprobs)
+    return np.round(np.exp(average_log_prob)*100,2)
