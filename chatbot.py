@@ -32,10 +32,6 @@ TransparentGPT_settings = TransparentGPTSettings()
 async def start():
     greeting = f"Hello! I am TransparentGPT, a chatbot that is able to clarify my reasoning 🧠, explain my thought process 🙊, and cite the sources 📚 that I used for my response. \n\n I also provide a suite of customizable features! 😁 \n\n You can find my customization options in the settings panel that opens up when you click on the gear icon below 🔨. \n\n Click on the ReadME button in the top right of your screen to learn more about how I work. 🫶"
     await cl.Message(greeting).send()
-    #ADD CONVERSATION MEMORY
-    conversation_memory = ConversationBufferMemory(memory_key="chat_history",
-                                                   max_len=50,
-                                                   return_messages = True)
     settings = await cl.ChatSettings(
         [
             Select(
