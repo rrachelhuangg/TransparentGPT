@@ -26,6 +26,8 @@ def get_wikipedia_page_content(page_title):
     Scrapes Wikipedia pages with the Revisions API and returns the main text content from the page.
     """
     page_title = re.sub(r"\s+", "", page_title).strip()
+    page_title = re.sub(r"_+", " ", page_title).strip()
+    page_title = re.sub(r"\[|\]", " ", page_title).strip()
     url = f"https://en.wikipedia.org/w/api.php?action=query&format=json&prop=revisions&titles={page_title}&formatversion=2&rvprop=content&rvslots=*"
     response = requests.get(url)
     data = response.json()
