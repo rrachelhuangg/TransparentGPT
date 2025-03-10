@@ -18,7 +18,7 @@
 
 * Example of querying the Meta Llama 31 model with the GenZ prompt template bot using basic query expansion:
 
-<img width="420" alt="Screenshot 2025-03-10 at 4 02 17 PM" src="https://github.com/user-attachments/assets/a668081d-49b7-4b50-9d16-ed89a24e327d" /> <img width="420" alt="Screenshot 2025-03-10 at 4 02 22 PM" src="https://github.com/user-attachments/assets/8e2b2c3a-9c59-4105-bfb2-21939cad9dba" />
+<img width="410" alt="Screenshot 2025-03-10 at 4 02 17 PM" src="https://github.com/user-attachments/assets/a668081d-49b7-4b50-9d16-ed89a24e327d"/> <img width="410" alt="Screenshot 2025-03-10 at 4 02 22 PM" src="https://github.com/user-attachments/assets/8e2b2c3a-9c59-4105-bfb2-21939cad9dba" />
 
 ![Static Badge](https://img.shields.io/badge/Langchain-green) ![Static Badge](https://img.shields.io/badge/Chainlit-red) ![Static Badge](https://img.shields.io/badge/NebiusStudio-black) ![Static Badge](https://img.shields.io/badge/MetaLlama-blue) ![Static Badge](https://img.shields.io/badge/MistralAI-purple) ![Static Badge](https://img.shields.io/badge/DolphinMixtral-blue) ![Static Badge](https://img.shields.io/badge/MicrsoftMini-black)
 
