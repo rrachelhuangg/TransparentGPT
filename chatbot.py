@@ -160,7 +160,3 @@ async def handle_message(message: cl.Message):
                 break
     output_message = response.content + f"\n I am {highest_log_prob(response.response_metadata["logprobs"]['content'])}% confident in this response."
     await cl.Message(output_message).send()
-
-
-if __name__ == '__main__':
-    start()
