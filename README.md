@@ -16,7 +16,7 @@
   * <b>Query expansion</b>: user can choose between no query expansion, basic query expansion, multiquery query expansion, and hypothetical answer query expansion****
   * <b>Temperature</b>: slider allows user to choose how consistent they want their responses to be
 
-* Example of querying the GenZ prompt template bot using basic query expansion:
+* Example of querying the Meta Llama 31 model with the GenZ prompt template bot using basic query expansion:
 
 <img width="420" alt="Screenshot 2025-03-10 at 4 02 17 PM" src="https://github.com/user-attachments/assets/a668081d-49b7-4b50-9d16-ed89a24e327d" /> <img width="420" alt="Screenshot 2025-03-10 at 4 02 22 PM" src="https://github.com/user-attachments/assets/8e2b2c3a-9c59-4105-bfb2-21939cad9dba" />
 
