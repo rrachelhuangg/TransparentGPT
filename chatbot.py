@@ -1,26 +1,16 @@
-import os
+"""
+A Chainlit controller to handle initialization and user interaction.
+"""
 import chainlit as cl
-from langchain.memory.buffer import ConversationBufferMemory
-from langchain_openai import ChatOpenAI, OpenAI
-from langchain.chains import LLMChain
+from langchain_openai import ChatOpenAI
 from prompts import default_prompt_template, doctor_prompt_template, default_prompt_template_no_sources, doctor_prompt_template_no_sources, default_quirky_genz_prompt, default_quirky_genz_prompt_no_sources, default_food_critic_prompt, default_food_critic_prompt_no_sources, default_media_critic_prompt, default_media_critic_prompt_no_sources
 from dotenv import load_dotenv
 from chainlit.input_widget import Select, Switch, Slider
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from math import exp
-import numpy as np
-from typing import Any, Dict, List, Tuple
-from langchain_core.output_parsers import BaseOutputParser
-from difflib import SequenceMatcher
-from methods import test_scrape_sim, update_config, load_config, generate_hypothetical_answer, highest_log_prob
-import json
+from langchain_core.prompts import PromptTemplate
+from typing import List
+from methods import similarity_analysis, update_config, load_config, highest_log_prob
 from classes import LineListOutputParser, TransparentGPTSettings
-import emoji
 
-#setting environment variables (non-Nebius API access keys)
-#HAVE CLASSES BE IMPORT FROM OTHER FILES TO CLEAN UP CODE!! proper documentation and typing are v important
-#also don't forget to refactor!^
-#have a requirements.txt file if not deployed?
 load_dotenv()
 
 config = load_config()
@@ -30,6 +20,9 @@ TransparentGPT_settings = TransparentGPTSettings()
 
 @cl.on_chat_start
 async def start():
+    """
+    Display greeting message and initialize Settings panel that allows user to customize TransparentGPT features.
+    """
     greeting = f"Hello! I am TransparentGPT, a chatbot that is able to clarify my reasoning 🧠, explain my thought process 🙊, and cite the sources 📚 that I used for my response. \n\n I also provide a suite of customizable features! 😁 \n\n You can find my customization options in the settings panel that opens up when you click on the gear icon below 🔨. \n\n Click on the ReadME button in the top right of your screen to learn more about how I work. 🫶"
     await cl.Message(greeting).send()
     settings = await cl.ChatSettings(
@@ -83,12 +76,18 @@ async def start():
     ).send()
 
 @cl.on_settings_update
-async def start(settings):
+async def start(settings: TransparentGPTSettings):
+    """
+    Update TransparentGPT settings and functionality when Setting panel values are changed.
+    """
     update_config(settings['Number of Sources'])
     TransparentGPT_settings.update_settings(settings)
 
 @cl.on_message
 async def handle_message(message: cl.Message):
+    """
+    Bulk of TransparentGPT logic. Generates responses based on the config values in the Settings panel.
+    """
     await cl.Message("Your message was received successfully. I am working on generating my response. Please wait for a few seconds...").send()
     question = message.content
     expanded_query = ''
@@ -103,16 +102,27 @@ async def handle_message(message: cl.Message):
             pt = PromptTemplate(
                 input_variables=['question'],
                 template="""
-                You are an AI language model assistant. Your task is to generate give different versions of the given user question to retrieve
-                context for your response. By generating multiple perspectives on the user question, your goal is to help the user overcome
-                some of hte limitations of the distance-based similarity search. Provide these alternative questions separated by newlines. 
+                You are an AI language model assistant. Your task is to generate give 3 different versions of the given user question to retrieve
+                context for your response. By generating 3 multiple perspectives on the user question, your goal is to help the user overcome
+                some of the limitations of the distance-based similarity search. Provide these 3 alternative questions separated by newlines. 
                 Original question: {question},
                 """
             )
             init_chain = pt | TransparentGPT_settings.llm | output_parser
             expanded_query = ' '.join(init_chain.invoke({'question': message.content, "num_sources": TransparentGPT_settings.num_sources}))
         elif TransparentGPT_settings.query_expansion == "Hypothetical answer":
-            hypothetical_answer = generate_hypothetical_answer(message.content)
+            """Have LLM generate a hypothetical answer to assist with bot response."""
+            prompt = PromptTemplate(
+                input_variables=['question'],
+                template="""
+                You are an AI assistant taked with generate a hypothetical answer to the following question. Your answer shoulld be detailed and comprehensive,
+                as if you had access to all relevant information. This hypothetical answer will be used to improve document retrieval, so include key terms and concepts
+                that might be relevant. Do not include phrases like "I think" or "It's possible that" - present the information as if it were factual.
+                Question:{question}
+                Hypothetical answer:
+                """,
+            )
+            hypothetical_answer = TransparentGPT_settings.llm.invoke(prompt.format(question=message.content))
             expanded_query = f'{message.content} {hypothetical_answer.content}'
     if expanded_query!='':
         await cl.Message(f"Using {TransparentGPT_settings.query_expansion}, your query is now: {expanded_query}. This expanded query will help me find more relevant information for my response.").send()
@@ -131,6 +141,7 @@ async def handle_message(message: cl.Message):
     response = TransparentGPT_settings.llm.invoke(expanded_query)
     similarity_values = []
     if no_source_prompt=="":
+        print("HERE: ", response.content)
         temp = response.content
         sources = []
         count = 0
@@ -138,7 +149,7 @@ async def handle_message(message: cl.Message):
             if count < num_sources:
                 link_idx = temp.rfind("*")
                 source = temp[link_idx+1:]
-                similarity_values += [test_scrape_sim(source, response.content)]
+                similarity_values += [similarity_analysis(source, response.content)]
                 temp = temp[:link_idx]
                 count += 1
             else:
