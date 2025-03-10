@@ -38,8 +38,8 @@ formatting text, though non-natural language text is minimzed in the scraped con
 * `git clone https://github.com/rrachelhuangg/TransparentGPT.git`
 * `cd social-media-chatbot`
 * `pip install requirements.txt`
-* Generate API keys:
-  * Generate a Nebius Studio API key [here](https://studio.nebius.com/settings/api-keys)
-  * Can also generate a LiteralAI API key [here](https://cloud.getliteral.ai/projects/rebuild_hackathon-yASBMe2aWvjB/settings?apiKeys-filter=%5B%5D) to enable immediate thumbs up/down feedback of each TransparentGPT response
+* Generate API keys and add to a `.env` file:
+  * Generate a Nebius Studio API key [here](https://studio.nebius.com/settings/api-keys) and add a `NEBIUS_API_KEY = <your API key>` line to `.env`
+  * Can also generate a LiteralAI API key [here](https://cloud.getliteral.ai/projects/rebuild_hackathon-yASBMe2aWvjB/settings?apiKeys-filter=%5B%5D) to enable immediate thumbs up/down feedback of each TransparentGPT response. Add a `LITERAL_API_KEY = <your API key>` line to `.env`
 * `chainlit run chatbot.py -w --port 8000`
 * Navigate to [localhost:8000](http://localhost:8000/)
