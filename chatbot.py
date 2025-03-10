@@ -3,7 +3,7 @@ import chainlit as cl
 from langchain.memory.buffer import ConversationBufferMemory
 from langchain_openai import ChatOpenAI, OpenAI
 from langchain.chains import LLMChain
-from prompts import default_prompt_template, doctor_prompt_template, default_prompt_template_no_sources, doctor_prompt_template_no_sources, default_quirky_genz_prompt, default_quirky_genz_prompt_no_sources, default_food_critic_prompt, default_food_critic_prompt_no_sources
+from prompts import default_prompt_template, doctor_prompt_template, default_prompt_template_no_sources, doctor_prompt_template_no_sources, default_quirky_genz_prompt, default_quirky_genz_prompt_no_sources, default_food_critic_prompt, default_food_critic_prompt_no_sources, default_media_critic_prompt, default_media_critic_prompt_no_sources
 from dotenv import load_dotenv
 from chainlit.input_widget import Select, Switch, Slider
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
@@ -51,7 +51,7 @@ async def start():
                 id="Prompt Template",
                 label="Prompt Template",
                 description="Determines the type of bot you interact with.",
-                values=["default", "doctor", "genz", "food-critic"],
+                values=["default", "doctor", "genz", "food_critic", "media_critic"],
                 initial_index=0,
             ),
             Select(
