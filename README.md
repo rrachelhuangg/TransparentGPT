@@ -1,5 +1,6 @@
-# TransparentGPT
-* Chatbot that is able to <b>clarify its reasoning</b> 🧠, <b>explain its thought process</b> 🙊, and <b>cite the sources</b> 📚 that it used for its responses.
+<img width="500" alt="logo" src="https://github.com/user-attachments/assets/7d65ec95-aac8-40ac-b133-4c6c05c61202" />
+
+* TransparencyGPT is a chatbot that is able to <b>clarify its reasoning</b> 🧠, <b>explain its thought process</b> 🙊, and <b>cite the sources</b> 📚 that it used for its responses.
 * Provides intermediate responses when user query is received, query is being expanded, and when sources are being retrieved to generate responses
 * Sources that TransparentGPT uses are exposed by <b>prompt engineering</b>. Allows user to click on these source links to verify if responses are correct*
   * A <b>relevance score</b> is calculated and provided provided for each source to show the user how useful that source was in generating the TranparentGPT's response**
