@@ -140,14 +140,16 @@ async def handle_message(message: cl.Message):
     await cl.Message("I have begun looking for relevant sources to answer your query, and am giving them a similarity score to show you how relevant they are to my response.").send()
     response = TransparentGPT_settings.llm.invoke(expanded_query)
     similarity_values = []
+    bp_symbol = "*"
+    if response.content.rfind("-") > 0.5*len(response.content):
+        bp_symbol = "-"
     if no_source_prompt=="":
-        print("HERE: ", response.content)
         temp = response.content
         sources = []
         count = 0
-        while "*" in temp:
+        while bp_symbol in temp:
             if count < num_sources:
-                link_idx = temp.rfind("*")
+                link_idx = temp.rfind(bp_symbol)
                 source = temp[link_idx+1:]
                 similarity_values += [similarity_analysis(source, response.content)]
                 temp = temp[:link_idx]
@@ -159,9 +161,9 @@ async def handle_message(message: cl.Message):
     count = 0
     n_label = num_sources
     if len(similarity_values) > 0:
-        while "*" in temp:
+        while bp_symbol in temp:
             if count < num_sources:
-                link_idx = temp.rfind("*")
+                link_idx = temp.rfind(bp_symbol)
                 response.content = response.content[:link_idx] + f"Source {n_label} relevance score: " + str(round(similarity_values[here],3)) + "%\n" + response.content[link_idx+1:]
                 temp = temp[:link_idx]
                 count += 1
