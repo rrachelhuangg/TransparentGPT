@@ -1,9 +1,13 @@
+"""
+TransparentGPT Settings class and helper class to assist with multiquery expansion.
+"""
+import os
 from langchain_core.output_parsers import BaseOutputParser
 from typing import List
 from prompts import default_prompt_template, doctor_prompt_template, default_prompt_template_no_sources, doctor_prompt_template_no_sources, default_quirky_genz_prompt, default_quirky_genz_prompt_no_sources, default_food_critic_prompt, default_food_critic_prompt_no_sources, default_media_critic_prompt, default_media_critic_prompt_no_sources
 from methods import load_config
 from langchain_openai import ChatOpenAI
-import os
+
 
 class LineListOutputParser(BaseOutputParser[List[str]]):
     """Output parser that splits a LLM result into a list of queries."""
@@ -12,6 +16,9 @@ class LineListOutputParser(BaseOutputParser[List[str]]):
         return list(filter(None, lines))
 
 class TransparentGPTSettings:
+    """
+    Stores and handles TransparentGPT settings in persistent memory across files.
+    """
     def __init__(self):
         self.model = "meta-llama/Llama-3.3-70B-Instruct"
         self.temperature = 0.7
