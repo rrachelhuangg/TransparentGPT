@@ -9,20 +9,23 @@
 
   <img width="400" alt="TransparentGPT_settings_panel" src="https://github.com/user-attachments/assets/46be3f5c-d795-438d-b110-7ed49b3d3b9b" />
   
-  * Large language model (LLM): choose betweeen a handful of Meta, MistralAI, and Microsoft's open-source LLM's!
-  * Source display: toggle switch allows user to choose if they want the sources used displayed with each response
-  * Number of sources: slider allows user to choose how many sources they want to be used for each response
-  * Prompt template: user can choose a prompt template for their bot. This determines what kind of TransparentGPT bot they interact with
-  * Query expansion: user can choose between no query expansion, basic query expansion, multiquery query expansion, and hypothetical answer query expansion****
-  * Temperature: slider allows user to choose how consistent they want their responses to be
+  * <b>Large language model (LLM)</b>: choose betweeen a handful of Meta, MistralAI, and Microsoft's open-source LLM's!
+  * <b>Source display</b>: toggle switch allows user to choose if they want the sources used displayed with each response
+  * <b>Number of sources</b>: slider allows user to choose how many sources they want to be used for each response
+  * <b>Prompt template</b>: user can choose a prompt template for their bot. This determines what kind of TransparentGPT bot they interact with
+  * <b>Query expansion</b>: user can choose between no query expansion, basic query expansion, multiquery query expansion, and hypothetical answer query expansion****
+  * <b>Temperature</b>: slider allows user to choose how consistent they want their responses to be
 
+![Static Badge](https://img.shields.io/badge/Langchain-green) ![Static Badge](https://img.shields.io/badge/Chainlit-red) ![Static Badge](https://img.shields.io/badge/NebiusStudio-black) ![Static Badge](https://img.shields.io/badge/MetaLlama-blue) ![Static Badge](https://img.shields.io/badge/MistralAI-purple) ![Static Badge](https://img.shields.io/badge/DolphinMixtral-blue) ![Static Badge](https://img.shields.io/badge/MicrsoftMini-black)
 
-I am built with Langchain, Chainlit, Nebius Studio, Open-source Large Language Models, a bit of web scraping, and some vector similarity analysis on text embeddings.
-My Github: TransparentGPT 🔗
-* Calculating the relevance of each score: The bot is only allowed to use Wikipedia sources, for which direct links can be provided and the text content of the page is more easily scraped. I scrape the text content of the source using the Revisions API. Then, I compare the scraped source text and my response text via a cosine vector similarity analysis. Please note that the relevance scores provided with each source will seem pretty low because the scraped text of the sources is likely longer than my response and may contain HTML or other related
-formatting text, though I try to minimize non-natural language text in the scraped content.
-** Calculating how confident I am in my answer: I calculate the negative log-likelihood of each token in my response, relative to the position of other tokens. The average of these values can represent how confident I am in my response, and this form of confidence calculating is formally called "perplexity."
-* provide custom statistics about followers, activity, etc.
+\* TransparentGPT is told to only use Wikipedia sources that it can provide links for. This is to demonstrate how sources can be accessed and analyzed, and can be expanded to include sources other than Wikipedia.
+
+\** The relevance of each score is calculcated by scraping the text content of a source using the Revisions API. The scraped source text and TransparentGPT's response text are compared via a consine vector similarity analysis. Please note that the relevance scores provided with each source will seem pretty low because the scraped text of the sources is likely longer than the output response and may contain HTML or other related
+formatting text, though non-natural language text is minimzed in the scraped content.
+
+\*** The confidence of my answer is calculated by averaging the negative log-likelihood of each token in a response, relative to the position of other tokens. This represents the confidence of my response and is called the "perplexity."
+
+\**** Query expansion is a method of improving chatbot responses by adding related terms and phrases to the user's query. This gives the chatbot more information to compare against when looking for helpful sources to use for its response. Multiquery query expansion is a method of query expansion where the large language model will generate n-related queries to use in addition to the user's query. TransparentGPT will generate 3 extra queries for multiquery expansion. For, hypothetical answer query expansion, the large language model will answer the user's query with no external context. This often means that it will make up information based on the user query. This is not used for the chatbot's final response, but rather improves its response, because the hypothetical answer will contain more relevant terms and phrases to help the chatbook look for helpful sources.
 
 ## Demo Video:
 
