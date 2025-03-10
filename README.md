@@ -2,8 +2,8 @@
 * Chatbot that is able to <b>clarify its reasoning</b> 🧠, <b>explain its thought process</b> 🙊, and <b>cite the sources</b> 📚 that it used for its responses.
 * Provides intermediate responses when user query is received, query is being expanded, and when sources are being retrieved to generate responses
 * Sources that TransparentGPT uses are exposed by <b>prompt engineering</b>. Allows user to click on these source links to verify if responses are correct*
-  * A relevance score is provided for each score to show the user how useful that source was in generating the TranparentGPT's response**
-* A confidence score is also provided for each response***
+  * A <b>relevance score</b> is calculated and provided provided for each source to show the user how useful that source was in generating the TranparentGPT's response**
+* A <b>confidence score</b> is also calculated and provided for each response***
 * ReadME file in top right corner of TransparentGPT's UI provides a detailed explanation of the features and concepts descriped in this Github ReadME
 * Settings panel provides a suite of <b>customizable features</b>
 
