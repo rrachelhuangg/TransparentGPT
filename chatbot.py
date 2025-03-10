@@ -127,9 +127,9 @@ async def handle_message(message: cl.Message):
         expanded_query = no_source_prompt.invoke({"question": expanded_query, "num_sources": TransparentGPT_settings.num_sources})
     elif expanded_query !='' and TransparentGPT_settings.display_sources:
         expanded_query = TransparentGPT_settings.prompt.invoke({"question":expanded_query, "num_sources":TransparentGPT_settings.num_sources})
+    await cl.Message("I have begun looking for relevant sources to answer your query, and am giving them a similarity score to show you how relevant they are to my response.").send()
     response = TransparentGPT_settings.llm.invoke(expanded_query)
     similarity_values = []
-    await cl.Message("I have begun looking for relevant sources to answer your query, and am giving them a similarity score to show you how relevant they are to my response.").send()
     if no_source_prompt=="":
         temp = response.content
         sources = []
@@ -146,14 +146,16 @@ async def handle_message(message: cl.Message):
     temp = response.content
     here = 2
     count = 0
+    n_label = num_sources
     if len(similarity_values) > 0:
         while "*" in temp:
             if count < num_sources:
                 link_idx = temp.rfind("*")
-                response.content = response.content[:link_idx] + str(round(similarity_values[here],3)) + "%" + response.content[link_idx+1:]
+                response.content = response.content[:link_idx] + f"Source {n_label} relevance score: " + str(round(similarity_values[here],3)) + "%\n" + response.content[link_idx+1:]
                 temp = temp[:link_idx]
                 count += 1
                 here -= 1
+                n_label -= 1
             else:
                 break
     output_message = response.content + f"\n I am {highest_log_prob(response.response_metadata["logprobs"]['content'])}% confident in this response."
